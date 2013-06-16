@@ -207,14 +207,10 @@ func (c *CPU) setupOpcodes() {
 		c.SP++
 	}
 	c.opcodes[0x34] = func() {
-		val := c.Memory.Read(c.HL)
-		c.inc(&val)
-		c.Memory.Write(c.HL, val)
+		c.Memory.Write(c.HL, c.inc(c.Memory.Read(c.HL)))
 	}
 	c.opcodes[0x35] = func() {
-		val := c.Memory.Read(c.HL)
-		c.dec(&val)
-		c.Memory.Write(c.HL, val)
+		c.Memory.Write(c.HL, c.dec(c.Memory.Read(c.HL)))
 	}
 	c.opcodes[0x36] = func() {
 		c.Memory.Write(c.HL, c.NextByte())
@@ -241,10 +237,10 @@ func (c *CPU) setupOpcodes() {
 		c.SP--
 	}
 	c.opcodes[0x3C] = func() {
-		c.inc(&c.A)
+		c.A = c.inc(c.A)
 	}
 	c.opcodes[0x3D] = func() {
-		c.dec(&c.A)
+		c.A = c.dec(c.A)
 	}
 	c.opcodes[0x3E] = func() {
 		c.A = c.NextByte()
@@ -464,20 +460,20 @@ func getUpper(val uint16) uint8 {
 	return uint8((val & 0xFF00) >> 8)
 }
 
-func (c *CPU) inc(mem *uint8) uint8 {
-	c.Flags.H = (*mem & 0xF) == 0xF
-	(*mem)++
-	c.Flags.Z = *mem == 0
+func (c *CPU) inc(mem uint8) uint8 {
+	c.Flags.H = (mem & 0xF) == 0xF
+	mem++
+	c.Flags.Z = mem == 0
 	c.Flags.N = false
-	return *mem
+	return mem
 }
 
-func (c *CPU) dec(mem *uint8) uint8 {
-	(*mem)--
-	c.Flags.Z = *mem == 0
+func (c *CPU) dec(mem uint8) uint8 {
+	mem--
+	c.Flags.Z = mem == 0
 	c.Flags.N = true
-	c.Flags.H = (*mem & 0xF) == 0xF
-	return *mem
+	c.Flags.H = (mem & 0xF) == 0xF
+	return mem
 }
 
 func (c *CPU) addRegs(a *uint16, b *uint16) {
