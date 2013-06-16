@@ -12,13 +12,13 @@ func (c *CPU) setupOpcodes() {
 		c.BC++
 	}
 	c.opcodes[0x04] = func() {
-		halfOp(&c.BC, true, func(b *uint8) { c.inc(b) })
+		setUpper(&c.BC, c.inc(getUpper(c.BC)))
 	}
 	c.opcodes[0x05] = func() {
-		halfOp(&c.BC, true, func(b *uint8) { c.dec(b) })
+		setUpper(&c.BC, c.dec(getUpper(c.BC)))
 	}
 	c.opcodes[0x06] = func() {
-		halfOp(&c.BC, true, func(b *uint8) { c.loadReg(b) })
+		setUpper(&c.BC, c.NextByte())
 	}
 	c.opcodes[0x07] = func() {
 		c.Flags.C = c.A&(1<<7) == (1 << 7)
@@ -43,13 +43,13 @@ func (c *CPU) setupOpcodes() {
 		c.BC--
 	}
 	c.opcodes[0x0C] = func() {
-		halfOp(&c.BC, false, func(b *uint8) { c.inc(b) })
+		setLower(&c.BC, c.inc(getLower(c.BC)))
 	}
 	c.opcodes[0x0D] = func() {
-		halfOp(&c.BC, false, func(b *uint8) { c.dec(b) })
+		setLower(&c.BC, c.dec(getLower(c.BC)))
 	}
 	c.opcodes[0x0E] = func() {
-		halfOp(&c.BC, false, func(b *uint8) { c.loadReg(b) })
+		setLower(&c.BC, c.NextByte())
 	}
 	c.opcodes[0x0F] = func() {
 		c.Flags.C = c.A&0x1 == 0x1
@@ -74,13 +74,13 @@ func (c *CPU) setupOpcodes() {
 		c.DE++
 	}
 	c.opcodes[0x14] = func() {
-		halfOp(&c.DE, true, func(b *uint8) { c.inc(b) })
+		setUpper(&c.DE, c.inc(getUpper(c.DE)))
 	}
 	c.opcodes[0x15] = func() {
-		halfOp(&c.DE, true, func(b *uint8) { c.dec(b) })
+		setUpper(&c.DE, c.dec(getUpper(c.DE)))
 	}
 	c.opcodes[0x16] = func() {
-		halfOp(&c.DE, true, func(b *uint8) { c.loadReg(b) })
+		setUpper(&c.DE, c.NextByte())
 	}
 	c.opcodes[0x17] = func() {
 		oldcarry := c.Flags.C
@@ -106,13 +106,13 @@ func (c *CPU) setupOpcodes() {
 		c.DE--
 	}
 	c.opcodes[0x1C] = func() {
-		halfOp(&c.DE, false, func(b *uint8) { c.inc(b) })
+		setLower(&c.DE, c.inc(getLower(c.DE)))
 	}
 	c.opcodes[0x1D] = func() {
-		halfOp(&c.DE, false, func(b *uint8) { c.dec(b) })
+		setLower(&c.DE, c.dec(getLower(c.DE)))
 	}
 	c.opcodes[0x1E] = func() {
-		halfOp(&c.DE, false, func(b *uint8) { c.loadReg(b) })
+		setLower(&c.DE, c.NextByte())
 	}
 	c.opcodes[0x1F] = func() {
 		oldcarry := c.Flags.C
@@ -142,13 +142,13 @@ func (c *CPU) setupOpcodes() {
 		c.HL++
 	}
 	c.opcodes[0x24] = func() {
-		halfOp(&c.HL, true, func(b *uint8) { c.inc(b) })
+		setUpper(&c.HL, c.inc(getUpper(c.HL)))
 	}
 	c.opcodes[0x25] = func() {
-		halfOp(&c.HL, true, func(b *uint8) { c.dec(b) })
+		setUpper(&c.HL, c.dec(getUpper(c.HL)))
 	}
 	c.opcodes[0x26] = func() {
-		halfOp(&c.HL, true, func(b *uint8) { c.loadReg(b) })
+		setUpper(&c.HL, c.NextByte())
 	}
 	c.opcodes[0x27] = func() {
 		c.Flags.C = false
@@ -179,13 +179,13 @@ func (c *CPU) setupOpcodes() {
 		c.HL--
 	}
 	c.opcodes[0x2C] = func() {
-		halfOp(&c.HL, false, func(b *uint8) { c.inc(b) })
+		setLower(&c.HL, c.inc(getLower(c.HL)))
 	}
 	c.opcodes[0x2D] = func() {
-		halfOp(&c.HL, false, func(b *uint8) { c.dec(b) })
+		setLower(&c.HL, c.dec(getLower(c.HL)))
 	}
 	c.opcodes[0x2E] = func() {
-		halfOp(&c.HL, false, func(b *uint8) { c.loadReg(b) })
+		setLower(&c.HL, c.NextByte())
 	}
 	c.opcodes[0x2F] = func() {
 		c.A = ^c.A
@@ -464,18 +464,20 @@ func getUpper(val uint16) uint8 {
 	return uint8((val & 0xFF00) >> 8)
 }
 
-func (c *CPU) inc(mem *uint8) {
+func (c *CPU) inc(mem *uint8) uint8 {
 	c.Flags.H = (*mem & 0xF) == 0xF
 	(*mem)++
 	c.Flags.Z = *mem == 0
 	c.Flags.N = false
+	return *mem
 }
 
-func (c *CPU) dec(mem *uint8) {
+func (c *CPU) dec(mem *uint8) uint8 {
 	(*mem)--
 	c.Flags.Z = *mem == 0
 	c.Flags.N = true
 	c.Flags.H = (*mem & 0xF) == 0xF
+	return *mem
 }
 
 func (c *CPU) addRegs(a *uint16, b *uint16) {
@@ -506,8 +508,4 @@ func halfOp(mem *uint16, high bool, op func(*uint8)) {
 	var half uint8 = uint8((*mem >> (btoi(high) * 8)) & 0xFF)
 	op(&half)
 	*mem = uint16((*mem)&(0xFF<<(btoi(!high)*8))) | (uint16(half) << (btoi(high) * 8))
-}
-
-func (c *CPU) loadReg(mem *uint8) {
-	(*mem) = c.NextByte()
 }
