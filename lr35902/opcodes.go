@@ -490,6 +490,150 @@ func (c *CPU) setupOpcodes() {
 	c.opcodes[0x8F] = func() {
 		c.A = c.adc(c.A, c.A)
 	}
+	c.opcodes[0x90] = func() {
+		c.sub(getUpper(c.BC))
+	}
+	c.opcodes[0x91] = func() {
+		c.sub(getLower(c.BC))
+	}
+	c.opcodes[0x92] = func() {
+		c.sub(getUpper(c.DE))
+	}
+	c.opcodes[0x93] = func() {
+		c.sub(getLower(c.DE))
+	}
+	c.opcodes[0x94] = func() {
+		c.sub(getUpper(c.HL))
+	}
+	c.opcodes[0x95] = func() {
+		c.sub(getLower(c.HL))
+	}
+	c.opcodes[0x96] = func() {
+		c.sub(c.Memory.Read(c.HL))
+	}
+	c.opcodes[0x97] = func() {
+		c.sub(c.A)
+	}
+	c.opcodes[0x98] = func() {
+		c.sbc(getUpper(c.BC))
+	}
+	c.opcodes[0x99] = func() {
+		c.sbc(getLower(c.BC))
+	}
+	c.opcodes[0x9A] = func() {
+		c.sbc(getUpper(c.DE))
+	}
+	c.opcodes[0x9B] = func() {
+		c.sbc(getLower(c.DE))
+	}
+	c.opcodes[0x9C] = func() {
+		c.sbc(getUpper(c.HL))
+	}
+	c.opcodes[0x9D] = func() {
+		c.sbc(getLower(c.HL))
+	}
+	c.opcodes[0x9E] = func() {
+		c.sbc(c.Memory.Read(c.HL))
+	}
+	c.opcodes[0x9F] = func() {
+		c.sbc(c.A)
+	}
+	c.opcodes[0xA0] = func() {
+		c.and(getUpper(c.BC))
+	}
+	c.opcodes[0xA1] = func() {
+		c.and(getLower(c.BC))
+	}
+	c.opcodes[0xA2] = func() {
+		c.and(getUpper(c.DE))
+	}
+	c.opcodes[0xA3] = func() {
+		c.and(getLower(c.DE))
+	}
+	c.opcodes[0xA4] = func() {
+		c.and(getUpper(c.HL))
+	}
+	c.opcodes[0xA5] = func() {
+		c.and(getLower(c.HL))
+	}
+	c.opcodes[0xA6] = func() {
+		c.and(c.Memory.Read(c.HL))
+	}
+	c.opcodes[0xA7] = func() {
+		c.and(c.A)
+	}
+	c.opcodes[0xA8] = func() {
+		c.xor(getUpper(c.BC))
+	}
+	c.opcodes[0xA9] = func() {
+		c.xor(getLower(c.BC))
+	}
+	c.opcodes[0xAA] = func() {
+		c.xor(getUpper(c.DE))
+	}
+	c.opcodes[0xAB] = func() {
+		c.xor(getLower(c.DE))
+	}
+	c.opcodes[0xAC] = func() {
+		c.xor(getUpper(c.HL))
+	}
+	c.opcodes[0xAD] = func() {
+		c.xor(getLower(c.HL))
+	}
+	c.opcodes[0xAE] = func() {
+		c.xor(c.Memory.Read(c.HL))
+	}
+	c.opcodes[0xAF] = func() {
+		c.xor(c.A)
+	}
+	c.opcodes[0xB0] = func() {
+		c.or(getUpper(c.BC))
+	}
+	c.opcodes[0xB1] = func() {
+		c.or(getLower(c.BC))
+	}
+	c.opcodes[0xB2] = func() {
+		c.or(getUpper(c.DE))
+	}
+	c.opcodes[0xB3] = func() {
+		c.or(getLower(c.DE))
+	}
+	c.opcodes[0xB4] = func() {
+		c.or(getUpper(c.HL))
+	}
+	c.opcodes[0xB5] = func() {
+		c.or(getLower(c.HL))
+	}
+	c.opcodes[0xB6] = func() {
+		c.or(c.Memory.Read(c.HL))
+	}
+	c.opcodes[0xB7] = func() {
+		c.or(c.A)
+	}
+	c.opcodes[0xB8] = func() {
+		c.cp(getUpper(c.BC))
+	}
+	c.opcodes[0xB9] = func() {
+		c.cp(getLower(c.BC))
+	}
+	c.opcodes[0xBA] = func() {
+		c.cp(getUpper(c.DE))
+	}
+	c.opcodes[0xBB] = func() {
+		c.cp(getLower(c.DE))
+	}
+	c.opcodes[0xBC] = func() {
+		c.cp(getUpper(c.HL))
+	}
+	c.opcodes[0xBD] = func() {
+		c.cp(getLower(c.HL))
+	}
+	c.opcodes[0xBE] = func() {
+		c.cp(c.Memory.Read(c.HL))
+	}
+	c.opcodes[0xBF] = func() {
+		c.cp(c.A)
+	}
 }
 
 func setLower(mem *uint16, val uint8) {
@@ -527,6 +671,51 @@ func (c *CPU) adc(a uint8, b uint8) uint8 {
 	c.Flags.C = n > 0xFF
 	c.Flags.N = false
 	return uint8(n & 0xFF)
+}
+
+func (c *CPU) sub(b uint8) {
+	c.cp(b)
+	c.A -= b
+}
+
+func (c *CPU) sbc(b uint8) {
+	c.Flags.H = (int8(c.A&0xF) - int8(b&0xF)) < 0
+	c.Flags.C = (int16(c.A) - int16(b) - 1) < 0
+	c.Flags.N = true
+	c.A -= b
+	c.A--
+	c.Flags.Z = c.A == 0
+}
+
+func (c *CPU) and(b uint8) {
+	c.A &= b
+	c.Flags.Z = c.A == 0
+	c.Flags.H = true
+	c.Flags.N = false
+	c.Flags.C = false
+}
+
+func (c *CPU) xor(b uint8) {
+	c.A ^= b
+	c.Flags.Z = c.A == 0
+	c.Flags.H = false
+	c.Flags.N = false
+	c.Flags.C = false
+}
+
+func (c *CPU) or(b uint8) {
+	c.A |= b
+	c.Flags.Z = c.A == 0
+	c.Flags.H = false
+	c.Flags.N = false
+	c.Flags.C = false
+}
+
+func (c *CPU) cp(b uint8) {
+	c.Flags.Z = c.A == b
+	c.Flags.H = (c.A & 0xF) < (b & 0xF)
+	c.Flags.N = true
+	c.Flags.C = c.A < b
 }
 
 func (c *CPU) inc(mem uint8) uint8 {
