@@ -21,7 +21,7 @@ func (c *CPU) setupOpcodes() {
 		setUpper(&c.BC, c.NextByte())
 	}
 	c.opcodes[0x07] = func() {
-		c.Flags.C = c.A&(1<<7) == (1 << 7)
+		c.Flags.C = (c.A & (1 << 7)) == (1 << 7)
 		c.Flags.H = false
 		c.Flags.N = false
 		c.Flags.Z = false
@@ -52,7 +52,7 @@ func (c *CPU) setupOpcodes() {
 		setLower(&c.BC, c.NextByte())
 	}
 	c.opcodes[0x0F] = func() {
-		c.Flags.C = c.A&0x1 == 0x1
+		c.Flags.C = (c.A & 0x1) == 0x1
 		c.Flags.H = false
 		c.Flags.N = false
 		c.Flags.Z = false
@@ -84,7 +84,7 @@ func (c *CPU) setupOpcodes() {
 	}
 	c.opcodes[0x17] = func() {
 		oldcarry := c.Flags.C
-		c.Flags.C = c.A&(1<<7) == (1 << 7)
+		c.Flags.C = (c.A & (1 << 7)) == (1 << 7)
 		c.Flags.H = false
 		c.Flags.N = false
 		c.Flags.Z = false
@@ -442,6 +442,54 @@ func (c *CPU) setupOpcodes() {
 	c.opcodes[0x7F] = func() {
 		c.A = c.A
 	}
+	c.opcodes[0x80] = func() {
+		c.A = c.add(c.A, getUpper(c.BC))
+	}
+	c.opcodes[0x81] = func() {
+		c.A = c.add(c.A, getLower(c.BC))
+	}
+	c.opcodes[0x82] = func() {
+		c.A = c.add(c.A, getUpper(c.DE))
+	}
+	c.opcodes[0x83] = func() {
+		c.A = c.add(c.A, getLower(c.DE))
+	}
+	c.opcodes[0x84] = func() {
+		c.A = c.add(c.A, getUpper(c.HL))
+	}
+	c.opcodes[0x85] = func() {
+		c.A = c.add(c.A, getLower(c.HL))
+	}
+	c.opcodes[0x86] = func() {
+		c.A = c.add(c.A, c.Memory.Read(c.HL))
+	}
+	c.opcodes[0x87] = func() {
+		c.A = c.add(c.A, c.A)
+	}
+	c.opcodes[0x88] = func() {
+		c.A = c.adc(c.A, getUpper(c.BC))
+	}
+	c.opcodes[0x89] = func() {
+		c.A = c.adc(c.A, getLower(c.BC))
+	}
+	c.opcodes[0x8A] = func() {
+		c.A = c.adc(c.A, getUpper(c.DE))
+	}
+	c.opcodes[0x8B] = func() {
+		c.A = c.adc(c.A, getLower(c.DE))
+	}
+	c.opcodes[0x8C] = func() {
+		c.A = c.adc(c.A, getUpper(c.HL))
+	}
+	c.opcodes[0x8D] = func() {
+		c.A = c.adc(c.A, getLower(c.HL))
+	}
+	c.opcodes[0x8E] = func() {
+		c.A = c.adc(c.A, c.Memory.Read(c.HL))
+	}
+	c.opcodes[0x8F] = func() {
+		c.A = c.adc(c.A, c.A)
+	}
 }
 
 func setLower(mem *uint16, val uint8) {
@@ -458,6 +506,27 @@ func getLower(val uint16) uint8 {
 
 func getUpper(val uint16) uint8 {
 	return uint8((val & 0xFF00) >> 8)
+}
+
+func (c *CPU) add(a uint8, b uint8) uint8 {
+	n := uint16(a) + uint16(b)
+	c.Flags.Z = (n & 0xFF) == 0
+	c.Flags.H = ((a & 0x0F) + (b & 0x0F)) > 0x0F
+	c.Flags.C = n > 0xFF
+	c.Flags.N = false
+	return uint8(n & 0xFF)
+}
+
+func (c *CPU) adc(a uint8, b uint8) uint8 {
+	n := uint16(a) + uint16(b)
+	if c.Flags.C {
+		n++
+	}
+	c.Flags.Z = (n & 0xFF) == 0
+	c.Flags.H = ((a & 0x0F) + (b & 0x0F)) > 0x0F
+	c.Flags.C = n > 0xFF
+	c.Flags.N = false
+	return uint8(n & 0xFF)
 }
 
 func (c *CPU) inc(mem uint8) uint8 {
@@ -480,8 +549,7 @@ func (c *CPU) addRegs(a *uint16, b *uint16) {
 	temp := uint32(*a) + uint32(*b)
 	c.Flags.N = false
 	c.Flags.C = temp > 0xFFFF
-	// TODO
-	c.Flags.H = (((*a) & 0x0F00) == 0x0F00) && ((temp & 0x0F00) == 0x0000)
+	c.Flags.H = ((*a & 0x0FFF) + (*b & 0x0FFF)) > 0x0FFF
 	*a = uint16(temp & 0xFFFF)
 }
 
@@ -492,16 +560,4 @@ func (c *CPU) relativeJump(dist uint8) {
 	} else {
 		c.PC -= uint16(-jump)
 	}
-}
-
-func halfOp(mem *uint16, high bool, op func(*uint8)) {
-	btoi := func(b bool) uint8 {
-		if b {
-			return 1
-		}
-		return 0
-	}
-	var half uint8 = uint8((*mem >> (btoi(high) * 8)) & 0xFF)
-	op(&half)
-	*mem = uint16((*mem)&(0xFF<<(btoi(!high)*8))) | (uint16(half) << (btoi(high) * 8))
 }
