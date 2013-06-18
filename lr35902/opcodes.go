@@ -83,15 +83,8 @@ func (c *CPU) setupOpcodes() {
 		setUpper(&c.DE, c.NextByte())
 	}
 	c.opcodes[0x17] = func() {
-		oldcarry := c.Flags.C
-		c.Flags.C = (c.A & (1 << 7)) == (1 << 7)
-		c.Flags.H = false
-		c.Flags.N = false
+		c.A = c.rl(c.A)
 		c.Flags.Z = false
-		c.A <<= 1
-		if oldcarry {
-			c.A |= 0x1
-		}
 	}
 	c.opcodes[0x18] = func() {
 		c.relativeJump(c.NextByte())
@@ -682,7 +675,8 @@ func (c *CPU) setupOpcodes() {
 		}
 	}
 	c.opcodes[0xCB] = func() {
-		c.cbOpcodes[c.NextByte()]()
+		b := c.NextByte()
+		c.cbOpcodes[b]()
 	}
 	c.opcodes[0xCC] = func() {
 		addr := c.NextWord()
@@ -861,6 +855,16 @@ func (c *CPU) setupOpcodes() {
 	c.opcodes[0xFF] = func() {
 		c.rst(0x38)
 	}
+
+	c.cbOpcodes[0x7C] = func() {
+		c.Flags.Z = getUpper(c.HL)&(1<<7) != 0
+		c.Flags.N = false
+		c.Flags.H = true
+	}
+
+	c.cbOpcodes[0x11] = func() {
+		setLower(&c.BC, c.rl(getLower(c.BC)))
+	}
 }
 
 func setLower(mem *uint16, val uint8) {
@@ -964,6 +968,19 @@ func (c *CPU) dec(mem uint8) uint8 {
 	c.Flags.N = true
 	c.Flags.H = (mem & 0xF) == 0xF
 	return mem
+}
+
+func (c *CPU) rl(val uint8) uint8 {
+	oldcarry := c.Flags.C
+	c.Flags.C = (val & (1 << 7)) == (1 << 7)
+	c.Flags.H = false
+	c.Flags.N = false
+	val <<= 1
+	if oldcarry {
+		val |= 0x1
+	}
+	c.Flags.Z = val == 0
+	return val
 }
 
 func (c *CPU) addRegs(a *uint16, b *uint16) {

@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"github.com/boukevanderbijl/gameboy-emu/lr35902"
+	"os"
 )
 
 type mem [0xFFFF]uint8
@@ -15,14 +17,14 @@ func (m *mem) Write(pos uint16, val uint8) {
 }
 
 func main() {
+
 	m := new(mem)
-	m[0] = 0x3E
-	m[1] = 0x00
-	m[2] = 0x2F
-	m[4] = 0x10
+	file, _ := os.Open("DMG_ROM.bin")
+	file.Read(m[:255])
+	fmt.Println(m[:255])
 	cpu := lr35902.NewCPU(m)
-	for !cpu.Stopped {
+	for !cpu.Stopped && cpu.PC <= 0xFF {
 		cpu.Step()
+		cpu.DumpState()
 	}
-	cpu.DumpState()
 }
