@@ -18,6 +18,8 @@ type CPU struct {
 
 	Stopped, Halted bool
 
+	InterruptsEnabled bool
+
 	Flags struct {
 		Z, N, H, C bool
 	}
@@ -50,9 +52,20 @@ func (c *CPU) NextWord() uint16 {
 	return uint16(c.NextByte()) | (uint16(c.NextByte()) << 8)
 }
 
+func (c *CPU) PushWord(val uint16) {
+	c.SP -= 2
+	c.WriteWord(c.SP, val)
+}
+
+func (c *CPU) PopWord() uint16 {
+	val := uint16(c.Memory.Read(c.SP)) | (uint16(c.Memory.Read(c.SP+1)) << 8)
+	c.SP += 2
+	return val
+}
+
 func (c *CPU) WriteWord(pos uint16, val uint16) {
 	c.Memory.Write(pos, uint8(val&0xFF))
-	c.Memory.Write(pos+1, uint8((val<<8)&0xFF))
+	c.Memory.Write(pos+1, uint8((val>>8)&0xFF))
 }
 
 func (c *CPU) DumpState() {

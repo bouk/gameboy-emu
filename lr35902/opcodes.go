@@ -443,52 +443,52 @@ func (c *CPU) setupOpcodes() {
 		c.A = c.A
 	}
 	c.opcodes[0x80] = func() {
-		c.A = c.add(c.A, getUpper(c.BC))
+		c.add(getUpper(c.BC))
 	}
 	c.opcodes[0x81] = func() {
-		c.A = c.add(c.A, getLower(c.BC))
+		c.add(getLower(c.BC))
 	}
 	c.opcodes[0x82] = func() {
-		c.A = c.add(c.A, getUpper(c.DE))
+		c.add(getUpper(c.DE))
 	}
 	c.opcodes[0x83] = func() {
-		c.A = c.add(c.A, getLower(c.DE))
+		c.add(getLower(c.DE))
 	}
 	c.opcodes[0x84] = func() {
-		c.A = c.add(c.A, getUpper(c.HL))
+		c.add(getUpper(c.HL))
 	}
 	c.opcodes[0x85] = func() {
-		c.A = c.add(c.A, getLower(c.HL))
+		c.add(getLower(c.HL))
 	}
 	c.opcodes[0x86] = func() {
-		c.A = c.add(c.A, c.Memory.Read(c.HL))
+		c.add(c.Memory.Read(c.HL))
 	}
 	c.opcodes[0x87] = func() {
-		c.A = c.add(c.A, c.A)
+		c.add(c.A)
 	}
 	c.opcodes[0x88] = func() {
-		c.A = c.adc(c.A, getUpper(c.BC))
+		c.adc(getUpper(c.BC))
 	}
 	c.opcodes[0x89] = func() {
-		c.A = c.adc(c.A, getLower(c.BC))
+		c.adc(getLower(c.BC))
 	}
 	c.opcodes[0x8A] = func() {
-		c.A = c.adc(c.A, getUpper(c.DE))
+		c.adc(getUpper(c.DE))
 	}
 	c.opcodes[0x8B] = func() {
-		c.A = c.adc(c.A, getLower(c.DE))
+		c.adc(getLower(c.DE))
 	}
 	c.opcodes[0x8C] = func() {
-		c.A = c.adc(c.A, getUpper(c.HL))
+		c.adc(getUpper(c.HL))
 	}
 	c.opcodes[0x8D] = func() {
-		c.A = c.adc(c.A, getLower(c.HL))
+		c.adc(getLower(c.HL))
 	}
 	c.opcodes[0x8E] = func() {
-		c.A = c.adc(c.A, c.Memory.Read(c.HL))
+		c.adc(c.Memory.Read(c.HL))
 	}
 	c.opcodes[0x8F] = func() {
-		c.A = c.adc(c.A, c.A)
+		c.adc(c.A)
 	}
 	c.opcodes[0x90] = func() {
 		c.sub(getUpper(c.BC))
@@ -634,6 +634,233 @@ func (c *CPU) setupOpcodes() {
 	c.opcodes[0xBF] = func() {
 		c.cp(c.A)
 	}
+	c.opcodes[0xC0] = func() {
+		if !c.Flags.Z {
+			c.PC = c.PopWord()
+		}
+	}
+	c.opcodes[0xC1] = func() {
+		c.BC = c.PopWord()
+	}
+	c.opcodes[0xC2] = func() {
+		addr := c.NextWord()
+		if !c.Flags.Z {
+			c.PC = addr
+		}
+	}
+	c.opcodes[0xC3] = func() {
+		c.PC = c.NextWord()
+	}
+	c.opcodes[0xC4] = func() {
+		addr := c.NextWord()
+		if !c.Flags.Z {
+			c.PushWord(c.PC)
+			c.PC = addr
+		}
+	}
+	c.opcodes[0xC5] = func() {
+		c.PushWord(c.BC)
+	}
+	c.opcodes[0xC6] = func() {
+		c.add(c.NextByte())
+	}
+	c.opcodes[0xC7] = func() {
+		c.rst(0x00)
+	}
+	c.opcodes[0xC8] = func() {
+		if c.Flags.Z {
+			c.PC = c.PopWord()
+		}
+	}
+	c.opcodes[0xC9] = func() {
+		c.PC = c.PopWord()
+	}
+	c.opcodes[0xCA] = func() {
+		addr := c.NextWord()
+		if c.Flags.Z {
+			c.PC = addr
+		}
+	}
+	c.opcodes[0xCB] = func() {
+		c.cbOpcodes[c.NextByte()]()
+	}
+	c.opcodes[0xCC] = func() {
+		addr := c.NextWord()
+		if c.Flags.Z {
+			c.PushWord(c.PC)
+			c.PC = addr
+		}
+	}
+	c.opcodes[0xCD] = func() {
+		addr := c.NextWord()
+		c.PushWord(c.PC)
+		c.PC = addr
+	}
+	c.opcodes[0xCE] = func() {
+		c.adc(c.NextByte())
+	}
+	c.opcodes[0xCF] = func() {
+		c.rst(0x08)
+	}
+	c.opcodes[0xD0] = func() {
+		if !c.Flags.C {
+			c.PC = c.PopWord()
+		}
+	}
+	c.opcodes[0xD1] = func() {
+		c.DE = c.PopWord()
+	}
+	c.opcodes[0xD2] = func() {
+		addr := c.NextWord()
+		if !c.Flags.C {
+			c.PC = addr
+		}
+	}
+	c.opcodes[0xD4] = func() {
+		addr := c.NextWord()
+		if !c.Flags.C {
+			c.PushWord(c.PC)
+			c.PC = addr
+		}
+	}
+	c.opcodes[0xD5] = func() {
+		c.PushWord(c.DE)
+	}
+	c.opcodes[0xD6] = func() {
+		c.sub(c.NextByte())
+	}
+	c.opcodes[0xD7] = func() {
+		c.rst(0x10)
+	}
+	c.opcodes[0xD8] = func() {
+		if c.Flags.C {
+			c.PC = c.PopWord()
+		}
+	}
+	c.opcodes[0xD9] = func() {
+		c.PC = c.PopWord()
+		c.InterruptsEnabled = true
+	}
+	c.opcodes[0xDA] = func() {
+		addr := c.NextWord()
+		if c.Flags.C {
+			c.PC = addr
+		}
+	}
+	c.opcodes[0xDC] = func() {
+		addr := c.NextWord()
+		if c.Flags.C {
+			c.PushWord(c.PC)
+			c.PC = addr
+		}
+	}
+	c.opcodes[0xDE] = func() {
+		c.sbc(c.NextByte())
+	}
+	c.opcodes[0xDF] = func() {
+		c.rst(0x18)
+	}
+	c.opcodes[0xE0] = func() {
+		c.Memory.Write((0xFF00 + uint16(c.NextByte())), c.A)
+	}
+	c.opcodes[0xE1] = func() {
+		c.HL = c.PopWord()
+	}
+	c.opcodes[0xE2] = func() {
+		c.Memory.Write((0xFF00 + uint16(getLower(c.BC))), c.A)
+	}
+	c.opcodes[0xE5] = func() {
+		c.PushWord(c.HL)
+	}
+	c.opcodes[0xE6] = func() {
+		c.and(c.NextByte())
+	}
+	c.opcodes[0xE7] = func() {
+		c.rst(0x20)
+	}
+	c.opcodes[0xE8] = func() {
+		val := c.NextByte()
+		c.Flags.H = ((c.PC & 0x0FFF) + uint16(val)) > 0x0FFF
+		c.Flags.C = (uint32(val) + uint32(c.PC)) > 0xFFFF
+		c.Flags.Z = false
+		c.Flags.N = false
+		c.SP = signedAdd(c.SP, val)
+	}
+	// TODO does JP (HL) mean jump to HL or jump to an address pointed to by HL
+	c.opcodes[0xE9] = func() {
+		c.PC = c.HL
+	}
+	c.opcodes[0xEA] = func() {
+		c.Memory.Write(c.NextWord(), c.A)
+	}
+	c.opcodes[0xEE] = func() {
+		c.xor(c.NextByte())
+	}
+	c.opcodes[0xEF] = func() {
+		c.rst(0x28)
+	}
+	c.opcodes[0xF0] = func() {
+		c.A = c.Memory.Read(0xFF00 + uint16(c.NextByte()))
+	}
+	c.opcodes[0xF1] = func() {
+		val := c.PopWord()
+		c.A = getUpper(val)
+		c.Flags.Z = val&(1<<7) != 0
+		c.Flags.N = val&(1<<6) != 0
+		c.Flags.H = val&(1<<5) != 0
+		c.Flags.C = val&(1<<4) != 0
+	}
+	c.opcodes[0xF2] = func() {
+		c.A = c.Memory.Read(0xFF00 + (c.BC & 0x00FF))
+	}
+	c.opcodes[0xF3] = func() {
+		c.InterruptsEnabled = false
+	}
+	c.opcodes[0xF5] = func() {
+		val := uint16(c.A) << 8
+		if c.Flags.Z {
+			val |= (1 << 7)
+		}
+		if c.Flags.N {
+			val |= (1 << 6)
+		}
+		if c.Flags.H {
+			val |= (1 << 5)
+		}
+		if c.Flags.C {
+			val |= (1 << 4)
+		}
+		c.PushWord(val)
+	}
+	c.opcodes[0xF6] = func() {
+		c.or(c.NextByte())
+	}
+	c.opcodes[0xF7] = func() {
+		c.rst(0x30)
+	}
+	c.opcodes[0xF8] = func() {
+		val := c.NextByte()
+		c.Flags.H = ((c.PC & 0x0FFF) + uint16(val)) > 0x0FFF
+		c.Flags.C = (uint32(val) + uint32(c.PC)) > 0xFFFF
+		c.Flags.Z = false
+		c.Flags.N = false
+		c.HL = signedAdd(c.SP, val)
+	}
+	c.opcodes[0xF9] = func() {
+		c.SP = c.HL
+	}
+	c.opcodes[0xFA] = func() {
+		c.A = c.Memory.Read(c.NextWord())
+	}
+	c.opcodes[0xFB] = func() {
+		c.InterruptsEnabled = true
+	}
+	c.opcodes[0xFE] = func() {
+		c.cp(c.NextByte())
+	}
+	c.opcodes[0xFF] = func() {
+		c.rst(0x38)
+	}
 }
 
 func setLower(mem *uint16, val uint8) {
@@ -652,25 +879,30 @@ func getUpper(val uint16) uint8 {
 	return uint8((val & 0xFF00) >> 8)
 }
 
-func (c *CPU) add(a uint8, b uint8) uint8 {
-	n := uint16(a) + uint16(b)
-	c.Flags.Z = (n & 0xFF) == 0
-	c.Flags.H = ((a & 0x0F) + (b & 0x0F)) > 0x0F
-	c.Flags.C = n > 0xFF
-	c.Flags.N = false
-	return uint8(n & 0xFF)
+func (c *CPU) rst(addr uint8) {
+	c.PushWord(c.PC)
+	c.PC = uint16(addr)
 }
 
-func (c *CPU) adc(a uint8, b uint8) uint8 {
-	n := uint16(a) + uint16(b)
+func (c *CPU) add(b uint8) {
+	n := uint16(c.A) + uint16(b)
+	c.Flags.Z = (n & 0xFF) == 0
+	c.Flags.H = ((c.A & 0x0F) + (b & 0x0F)) > 0x0F
+	c.Flags.C = n > 0xFF
+	c.Flags.N = false
+	c.A = uint8(n & 0xFF)
+}
+
+func (c *CPU) adc(b uint8) {
+	n := uint16(c.A) + uint16(b)
 	if c.Flags.C {
 		n++
 	}
 	c.Flags.Z = (n & 0xFF) == 0
-	c.Flags.H = ((a & 0x0F) + (b & 0x0F)) > 0x0F
+	c.Flags.H = ((c.A & 0x0F) + (b & 0x0F)) > 0x0F
 	c.Flags.C = n > 0xFF
 	c.Flags.N = false
-	return uint8(n & 0xFF)
+	c.A = uint8(n & 0xFF)
 }
 
 func (c *CPU) sub(b uint8) {
@@ -743,10 +975,14 @@ func (c *CPU) addRegs(a *uint16, b *uint16) {
 }
 
 func (c *CPU) relativeJump(dist uint8) {
-	jump := int8(dist)
-	if jump >= 0 {
-		c.PC += uint16(jump)
+	c.PC = signedAdd(c.PC, dist)
+}
+
+func signedAdd(a uint16, b uint8) uint16 {
+	bSigned := int8(b)
+	if bSigned >= 0 {
+		return a + uint16(bSigned)
 	} else {
-		c.PC -= uint16(-jump)
+		return a - uint16(-bSigned)
 	}
 }
