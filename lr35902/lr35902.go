@@ -68,7 +68,24 @@ func (c *CPU) WriteWord(pos uint16, val uint16) {
 	c.Memory.Write(pos+1, uint8((val>>8)&0xFF))
 }
 
+func (c *CPU) GetAF() uint16 {
+	val := (uint16(c.A) << 8)
+	if c.Flags.Z {
+		val |= (1 << 7)
+	}
+	if c.Flags.N {
+		val |= (1 << 6)
+	}
+	if c.Flags.H {
+		val |= (1 << 5)
+	}
+	if c.Flags.C {
+		val |= (1 << 4)
+	}
+	return val
+}
+
 func (c *CPU) DumpState() {
-	fmt.Println("A  BC   DE   HL   SP   PC")
-	fmt.Printf("%02X %04X %04X %04X %04X %04X\n", c.A, c.BC, c.DE, c.HL, c.SP, c.PC)
+	fmt.Println("AF   BC   DE   HL   SP   PC")
+	fmt.Printf("%04X %04X %04X %04X %04X %04X\n", c.GetAF(), c.BC, c.DE, c.HL, c.SP, c.PC)
 }
