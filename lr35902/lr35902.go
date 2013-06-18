@@ -26,8 +26,8 @@ type CPU struct {
 
 	Memory
 
-	opcodes   [0xFF]func()
-	cbOpcodes [0xFF]func()
+	opcodes   [0xFF + 1]func()
+	cbOpcodes [0xFF + 1]func()
 }
 
 func NewCPU(m Memory) *CPU {
