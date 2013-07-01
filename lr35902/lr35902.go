@@ -18,13 +18,21 @@ type CPU struct {
 
 	Stopped, Halted bool
 
-	InterruptsEnabled bool
+	IME bool
 
 	Flags struct {
 		Z, N, H, C bool
 	}
 
 	Memory
+
+	// in HZ
+	ClockSpeed uint
+
+	// Variable that's filled in by the opcode functions to make sure the processor runs on the correct speed.
+	// 1 machine cycle = 4 clock cycles
+	// is set to 4 and overwritten on a per-function basis
+	clockCycles uint
 
 	opcodes   [256]func()
 	cbOpcodes [256]func()
@@ -33,11 +41,13 @@ type CPU struct {
 func NewCPU(m Memory) *CPU {
 	c := new(CPU)
 	c.Memory = m
+	c.ClockSpeed = 4194304
 	c.setupOpcodes()
 	return c
 }
 
 func (c *CPU) Step() {
+	c.clockCycles = 4
 	opcode := c.NextByte()
 	c.opcodes[opcode]()
 }

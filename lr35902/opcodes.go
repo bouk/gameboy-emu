@@ -3,12 +3,15 @@ package lr35902
 func (c *CPU) setupOpcodes() {
 	c.opcodes[0x00] = func() {}
 	c.opcodes[0x01] = func() {
+		c.clockCycles = 12
 		c.BC = c.NextWord()
 	}
 	c.opcodes[0x02] = func() {
+		c.clockCycles = 8
 		c.Memory.Write(c.BC, c.A)
 	}
 	c.opcodes[0x03] = func() {
+		c.clockCycles = 8
 		c.BC++
 	}
 	c.opcodes[0x04] = func() {
@@ -18,6 +21,7 @@ func (c *CPU) setupOpcodes() {
 		setUpper(&c.BC, c.dec(getUpper(c.BC)))
 	}
 	c.opcodes[0x06] = func() {
+		c.clockCycles = 8
 		setUpper(&c.BC, c.NextByte())
 	}
 	c.opcodes[0x07] = func() {
@@ -25,15 +29,19 @@ func (c *CPU) setupOpcodes() {
 		c.Flags.Z = false
 	}
 	c.opcodes[0x08] = func() {
+		c.clockCycles = 20
 		c.WriteWord(c.NextWord(), c.SP)
 	}
 	c.opcodes[0x09] = func() {
+		c.clockCycles = 8
 		c.addRegs(&c.HL, &c.BC)
 	}
 	c.opcodes[0x0A] = func() {
+		c.clockCycles = 8
 		c.A = c.Memory.Read(c.BC)
 	}
 	c.opcodes[0x0B] = func() {
+		c.clockCycles = 8
 		c.BC--
 	}
 	c.opcodes[0x0C] = func() {
@@ -43,6 +51,7 @@ func (c *CPU) setupOpcodes() {
 		setLower(&c.BC, c.dec(getLower(c.BC)))
 	}
 	c.opcodes[0x0E] = func() {
+		c.clockCycles = 8
 		setLower(&c.BC, c.NextByte())
 	}
 	c.opcodes[0x0F] = func() {
@@ -53,12 +62,15 @@ func (c *CPU) setupOpcodes() {
 		c.Stopped = true
 	}
 	c.opcodes[0x11] = func() {
+		c.clockCycles = 12
 		c.DE = c.NextWord()
 	}
 	c.opcodes[0x12] = func() {
+		c.clockCycles = 8
 		c.Memory.Write(c.DE, c.A)
 	}
 	c.opcodes[0x13] = func() {
+		c.clockCycles = 8
 		c.DE++
 	}
 	c.opcodes[0x14] = func() {
@@ -68,6 +80,7 @@ func (c *CPU) setupOpcodes() {
 		setUpper(&c.DE, c.dec(getUpper(c.DE)))
 	}
 	c.opcodes[0x16] = func() {
+		c.clockCycles = 8
 		setUpper(&c.DE, c.NextByte())
 	}
 	c.opcodes[0x17] = func() {
@@ -75,15 +88,19 @@ func (c *CPU) setupOpcodes() {
 		c.Flags.Z = false
 	}
 	c.opcodes[0x18] = func() {
+		c.clockCycles = 12
 		c.relativeJump(c.NextByte())
 	}
 	c.opcodes[0x19] = func() {
+		c.clockCycles = 8
 		c.addRegs(&c.HL, &c.DE)
 	}
 	c.opcodes[0x1A] = func() {
+		c.clockCycles = 8
 		c.A = c.Memory.Read(c.DE)
 	}
 	c.opcodes[0x1B] = func() {
+		c.clockCycles = 8
 		c.DE--
 	}
 	c.opcodes[0x1C] = func() {
@@ -93,6 +110,7 @@ func (c *CPU) setupOpcodes() {
 		setLower(&c.DE, c.dec(getLower(c.DE)))
 	}
 	c.opcodes[0x1E] = func() {
+		c.clockCycles = 8
 		setLower(&c.DE, c.NextByte())
 	}
 	c.opcodes[0x1F] = func() {
@@ -101,18 +119,23 @@ func (c *CPU) setupOpcodes() {
 	}
 	c.opcodes[0x20] = func() {
 		dist := c.NextByte()
+		c.clockCycles = 8
 		if !c.Flags.Z {
+			c.clockCycles = 12
 			c.relativeJump(dist)
 		}
 	}
 	c.opcodes[0x21] = func() {
+		c.clockCycles = 12
 		c.HL = c.NextWord()
 	}
 	c.opcodes[0x22] = func() {
+		c.clockCycles = 8
 		c.Memory.Write(c.HL, c.A)
 		c.HL++
 	}
 	c.opcodes[0x23] = func() {
+		c.clockCycles = 8
 		c.HL++
 	}
 	c.opcodes[0x24] = func() {
@@ -122,6 +145,7 @@ func (c *CPU) setupOpcodes() {
 		setUpper(&c.HL, c.dec(getUpper(c.HL)))
 	}
 	c.opcodes[0x26] = func() {
+		c.clockCycles = 8
 		setUpper(&c.HL, c.NextByte())
 	}
 	c.opcodes[0x27] = func() {
@@ -138,18 +162,23 @@ func (c *CPU) setupOpcodes() {
 	}
 	c.opcodes[0x28] = func() {
 		dist := c.NextByte()
+		c.clockCycles = 8
 		if c.Flags.Z {
+			c.clockCycles = 12
 			c.relativeJump(dist)
 		}
 	}
 	c.opcodes[0x29] = func() {
+		c.clockCycles = 8
 		c.addRegs(&c.HL, &c.HL)
 	}
 	c.opcodes[0x2A] = func() {
+		c.clockCycles = 8
 		c.A = c.Memory.Read(c.HL)
 		c.HL++
 	}
 	c.opcodes[0x2B] = func() {
+		c.clockCycles = 8
 		c.HL--
 	}
 	c.opcodes[0x2C] = func() {
@@ -159,6 +188,7 @@ func (c *CPU) setupOpcodes() {
 		setLower(&c.HL, c.dec(getLower(c.HL)))
 	}
 	c.opcodes[0x2E] = func() {
+		c.clockCycles = 8
 		setLower(&c.HL, c.NextByte())
 	}
 	c.opcodes[0x2F] = func() {
@@ -166,27 +196,35 @@ func (c *CPU) setupOpcodes() {
 	}
 	c.opcodes[0x30] = func() {
 		dist := c.NextByte()
+		c.clockCycles = 8
 		if !c.Flags.C {
+			c.clockCycles = 12
 			c.relativeJump(dist)
 		}
 	}
 	c.opcodes[0x31] = func() {
+		c.clockCycles = 12
 		c.SP = c.NextWord()
 	}
 	c.opcodes[0x32] = func() {
+		c.clockCycles = 8
 		c.Memory.Write(c.HL, c.A)
 		c.HL--
 	}
 	c.opcodes[0x33] = func() {
+		c.clockCycles = 8
 		c.SP++
 	}
 	c.opcodes[0x34] = func() {
+		c.clockCycles = 12
 		c.Memory.Write(c.HL, c.inc(c.Memory.Read(c.HL)))
 	}
 	c.opcodes[0x35] = func() {
+		c.clockCycles = 12
 		c.Memory.Write(c.HL, c.dec(c.Memory.Read(c.HL)))
 	}
 	c.opcodes[0x36] = func() {
+		c.clockCycles = 12
 		c.Memory.Write(c.HL, c.NextByte())
 	}
 	c.opcodes[0x37] = func() {
@@ -195,19 +233,24 @@ func (c *CPU) setupOpcodes() {
 		c.Flags.N = false
 	}
 	c.opcodes[0x38] = func() {
+		c.clockCycles = 8
 		dist := c.NextByte()
 		if c.Flags.C {
+			c.clockCycles = 12
 			c.relativeJump(dist)
 		}
 	}
 	c.opcodes[0x39] = func() {
+		c.clockCycles = 8
 		c.addRegs(&c.HL, &c.SP)
 	}
 	c.opcodes[0x3A] = func() {
+		c.clockCycles = 8
 		c.A = c.Memory.Read(c.HL)
 		c.HL--
 	}
 	c.opcodes[0x3B] = func() {
+		c.clockCycles = 8
 		c.SP--
 	}
 	c.opcodes[0x3C] = func() {
@@ -217,6 +260,7 @@ func (c *CPU) setupOpcodes() {
 		c.A = c.dec(c.A)
 	}
 	c.opcodes[0x3E] = func() {
+		c.clockCycles = 8
 		c.A = c.NextByte()
 	}
 	c.opcodes[0x3F] = func() {
@@ -243,6 +287,7 @@ func (c *CPU) setupOpcodes() {
 		setUpper(&c.BC, getLower(c.HL))
 	}
 	c.opcodes[0x46] = func() {
+		c.clockCycles = 8
 		setUpper(&c.BC, c.Memory.Read(c.HL))
 	}
 	c.opcodes[0x47] = func() {
@@ -267,6 +312,7 @@ func (c *CPU) setupOpcodes() {
 		setLower(&c.BC, getLower(c.HL))
 	}
 	c.opcodes[0x4E] = func() {
+		c.clockCycles = 8
 		setLower(&c.BC, c.Memory.Read(c.HL))
 	}
 	c.opcodes[0x4F] = func() {
@@ -291,6 +337,7 @@ func (c *CPU) setupOpcodes() {
 		setUpper(&c.DE, getLower(c.HL))
 	}
 	c.opcodes[0x56] = func() {
+		c.clockCycles = 8
 		setUpper(&c.DE, c.Memory.Read(c.HL))
 	}
 	c.opcodes[0x57] = func() {
@@ -315,6 +362,7 @@ func (c *CPU) setupOpcodes() {
 		setLower(&c.DE, getLower(c.HL))
 	}
 	c.opcodes[0x5E] = func() {
+		c.clockCycles = 8
 		setLower(&c.DE, c.Memory.Read(c.HL))
 	}
 	c.opcodes[0x5F] = func() {
@@ -339,6 +387,7 @@ func (c *CPU) setupOpcodes() {
 		setUpper(&c.HL, getLower(c.HL))
 	}
 	c.opcodes[0x66] = func() {
+		c.clockCycles = 8
 		setUpper(&c.HL, c.Memory.Read(c.HL))
 	}
 	c.opcodes[0x67] = func() {
@@ -363,33 +412,41 @@ func (c *CPU) setupOpcodes() {
 		setLower(&c.HL, getLower(c.HL))
 	}
 	c.opcodes[0x6E] = func() {
+		c.clockCycles = 8
 		setLower(&c.HL, c.Memory.Read(c.HL))
 	}
 	c.opcodes[0x6F] = func() {
 		setLower(&c.HL, c.A)
 	}
 	c.opcodes[0x70] = func() {
+		c.clockCycles = 8
 		c.Memory.Write(c.HL, getUpper(c.BC))
 	}
 	c.opcodes[0x71] = func() {
+		c.clockCycles = 8
 		c.Memory.Write(c.HL, getLower(c.BC))
 	}
 	c.opcodes[0x72] = func() {
+		c.clockCycles = 8
 		c.Memory.Write(c.HL, getUpper(c.DE))
 	}
 	c.opcodes[0x73] = func() {
+		c.clockCycles = 8
 		c.Memory.Write(c.HL, getLower(c.DE))
 	}
 	c.opcodes[0x74] = func() {
+		c.clockCycles = 8
 		c.Memory.Write(c.HL, getUpper(c.HL))
 	}
 	c.opcodes[0x75] = func() {
+		c.clockCycles = 8
 		c.Memory.Write(c.HL, getLower(c.HL))
 	}
 	c.opcodes[0x76] = func() {
 		c.Halted = true
 	}
 	c.opcodes[0x77] = func() {
+		c.clockCycles = 8
 		c.Memory.Write(c.HL, c.A)
 	}
 	c.opcodes[0x78] = func() {
@@ -411,6 +468,7 @@ func (c *CPU) setupOpcodes() {
 		c.A = getLower(c.HL)
 	}
 	c.opcodes[0x7E] = func() {
+		c.clockCycles = 8
 		c.A = c.Memory.Read(c.HL)
 	}
 	c.opcodes[0x7F] = func() {
@@ -435,6 +493,7 @@ func (c *CPU) setupOpcodes() {
 		c.add(getLower(c.HL))
 	}
 	c.opcodes[0x86] = func() {
+		c.clockCycles = 8
 		c.add(c.Memory.Read(c.HL))
 	}
 	c.opcodes[0x87] = func() {
@@ -459,6 +518,7 @@ func (c *CPU) setupOpcodes() {
 		c.adc(getLower(c.HL))
 	}
 	c.opcodes[0x8E] = func() {
+		c.clockCycles = 8
 		c.adc(c.Memory.Read(c.HL))
 	}
 	c.opcodes[0x8F] = func() {
@@ -483,6 +543,7 @@ func (c *CPU) setupOpcodes() {
 		c.sub(getLower(c.HL))
 	}
 	c.opcodes[0x96] = func() {
+		c.clockCycles = 8
 		c.sub(c.Memory.Read(c.HL))
 	}
 	c.opcodes[0x97] = func() {
@@ -507,6 +568,7 @@ func (c *CPU) setupOpcodes() {
 		c.sbc(getLower(c.HL))
 	}
 	c.opcodes[0x9E] = func() {
+		c.clockCycles = 8
 		c.sbc(c.Memory.Read(c.HL))
 	}
 	c.opcodes[0x9F] = func() {
@@ -531,6 +593,7 @@ func (c *CPU) setupOpcodes() {
 		c.and(getLower(c.HL))
 	}
 	c.opcodes[0xA6] = func() {
+		c.clockCycles = 8
 		c.and(c.Memory.Read(c.HL))
 	}
 	c.opcodes[0xA7] = func() {
@@ -555,6 +618,7 @@ func (c *CPU) setupOpcodes() {
 		c.xor(getLower(c.HL))
 	}
 	c.opcodes[0xAE] = func() {
+		c.clockCycles = 8
 		c.xor(c.Memory.Read(c.HL))
 	}
 	c.opcodes[0xAF] = func() {
@@ -579,6 +643,7 @@ func (c *CPU) setupOpcodes() {
 		c.or(getLower(c.HL))
 	}
 	c.opcodes[0xB6] = func() {
+		c.clockCycles = 8
 		c.or(c.Memory.Read(c.HL))
 	}
 	c.opcodes[0xB7] = func() {
@@ -603,157 +668,210 @@ func (c *CPU) setupOpcodes() {
 		c.cp(getLower(c.HL))
 	}
 	c.opcodes[0xBE] = func() {
+		c.clockCycles = 8
 		c.cp(c.Memory.Read(c.HL))
 	}
 	c.opcodes[0xBF] = func() {
 		c.cp(c.A)
 	}
 	c.opcodes[0xC0] = func() {
+		c.clockCycles = 8
 		if !c.Flags.Z {
+			c.clockCycles = 20
 			c.PC = c.PopWord()
 		}
 	}
 	c.opcodes[0xC1] = func() {
+		c.clockCycles = 12
 		c.BC = c.PopWord()
 	}
 	c.opcodes[0xC2] = func() {
+		c.clockCycles = 12
 		addr := c.NextWord()
 		if !c.Flags.Z {
+			c.clockCycles = 16
 			c.PC = addr
 		}
 	}
 	c.opcodes[0xC3] = func() {
+		c.clockCycles = 16
 		c.PC = c.NextWord()
 	}
 	c.opcodes[0xC4] = func() {
+		c.clockCycles = 12
 		addr := c.NextWord()
 		if !c.Flags.Z {
+			c.clockCycles = 24
 			c.PushWord(c.PC)
 			c.PC = addr
 		}
 	}
 	c.opcodes[0xC5] = func() {
+		c.clockCycles = 16
 		c.PushWord(c.BC)
 	}
 	c.opcodes[0xC6] = func() {
+		c.clockCycles = 8
 		c.add(c.NextByte())
 	}
 	c.opcodes[0xC7] = func() {
+		c.clockCycles = 16
 		c.rst(0x00)
 	}
 	c.opcodes[0xC8] = func() {
+		c.clockCycles = 8
 		if c.Flags.Z {
+			c.clockCycles = 20
 			c.PC = c.PopWord()
 		}
 	}
 	c.opcodes[0xC9] = func() {
+		c.clockCycles = 16
 		c.PC = c.PopWord()
 	}
 	c.opcodes[0xCA] = func() {
+		c.clockCycles = 12
 		addr := c.NextWord()
 		if c.Flags.Z {
+			c.clockCycles = 16
 			c.PC = addr
 		}
 	}
 	c.opcodes[0xCB] = func() {
 		b := c.NextByte()
+		if b&0xF == 0x6 || b&0xF == 0xE {
+			c.clockCycles = 16
+		} else {
+			c.clockCycles = 8
+		}
 		c.cbOpcodes[b]()
 	}
 	c.opcodes[0xCC] = func() {
+		c.clockCycles = 12
 		addr := c.NextWord()
 		if c.Flags.Z {
+			c.clockCycles = 24
 			c.PushWord(c.PC)
 			c.PC = addr
 		}
 	}
 	c.opcodes[0xCD] = func() {
+		c.clockCycles = 24
 		addr := c.NextWord()
 		c.PushWord(c.PC)
 		c.PC = addr
 	}
 	c.opcodes[0xCE] = func() {
+		c.clockCycles = 8
 		c.adc(c.NextByte())
 	}
 	c.opcodes[0xCF] = func() {
+		c.clockCycles = 16
 		c.rst(0x08)
 	}
 	c.opcodes[0xD0] = func() {
+		c.clockCycles = 8
 		if !c.Flags.C {
+			c.clockCycles = 20
 			c.PC = c.PopWord()
 		}
 	}
 	c.opcodes[0xD1] = func() {
+		c.clockCycles = 12
 		c.DE = c.PopWord()
 	}
 	c.opcodes[0xD2] = func() {
+		c.clockCycles = 12
 		addr := c.NextWord()
 		if !c.Flags.C {
+			c.clockCycles = 16
 			c.PC = addr
 		}
 	}
 	c.opcodes[0xD4] = func() {
+		c.clockCycles = 12
 		addr := c.NextWord()
 		if !c.Flags.C {
+			c.clockCycles = 24
 			c.PushWord(c.PC)
 			c.PC = addr
 		}
 	}
 	c.opcodes[0xD5] = func() {
+		c.clockCycles = 16
 		c.PushWord(c.DE)
 	}
 	c.opcodes[0xD6] = func() {
+		c.clockCycles = 8
 		c.sub(c.NextByte())
 	}
 	c.opcodes[0xD7] = func() {
+		c.clockCycles = 16
 		c.rst(0x10)
 	}
 	c.opcodes[0xD8] = func() {
+		c.clockCycles = 8
 		if c.Flags.C {
+			c.clockCycles = 20
 			c.PC = c.PopWord()
 		}
 	}
 	c.opcodes[0xD9] = func() {
+		c.clockCycles = 16
 		c.PC = c.PopWord()
-		c.InterruptsEnabled = true
+		c.IME = true
 	}
 	c.opcodes[0xDA] = func() {
+		c.clockCycles = 12
 		addr := c.NextWord()
 		if c.Flags.C {
+			c.clockCycles = 16
 			c.PC = addr
 		}
 	}
 	c.opcodes[0xDC] = func() {
+		c.clockCycles = 12
 		addr := c.NextWord()
 		if c.Flags.C {
+			c.clockCycles = 24
 			c.PushWord(c.PC)
 			c.PC = addr
 		}
 	}
 	c.opcodes[0xDE] = func() {
+		c.clockCycles = 8
 		c.sbc(c.NextByte())
 	}
 	c.opcodes[0xDF] = func() {
+		c.clockCycles = 16
 		c.rst(0x18)
 	}
 	c.opcodes[0xE0] = func() {
+		c.clockCycles = 12
 		c.Memory.Write((0xFF00 + uint16(c.NextByte())), c.A)
 	}
 	c.opcodes[0xE1] = func() {
+		c.clockCycles = 12
 		c.HL = c.PopWord()
 	}
 	c.opcodes[0xE2] = func() {
+		c.clockCycles = 8
 		c.Memory.Write((0xFF00 + uint16(getLower(c.BC))), c.A)
 	}
 	c.opcodes[0xE5] = func() {
+		c.clockCycles = 16
 		c.PushWord(c.HL)
 	}
 	c.opcodes[0xE6] = func() {
+		c.clockCycles = 8
 		c.and(c.NextByte())
 	}
 	c.opcodes[0xE7] = func() {
+		c.clockCycles = 16
 		c.rst(0x20)
 	}
 	c.opcodes[0xE8] = func() {
+		c.clockCycles = 16
 		val := c.NextByte()
 		c.Flags.H = ((c.PC & 0x0FFF) + uint16(val)) > 0x0FFF
 		c.Flags.C = (uint32(val) + uint32(c.PC)) > 0xFFFF
@@ -766,18 +884,23 @@ func (c *CPU) setupOpcodes() {
 		c.PC = c.HL
 	}
 	c.opcodes[0xEA] = func() {
+		c.clockCycles = 16
 		c.Memory.Write(c.NextWord(), c.A)
 	}
 	c.opcodes[0xEE] = func() {
+		c.clockCycles = 8
 		c.xor(c.NextByte())
 	}
 	c.opcodes[0xEF] = func() {
+		c.clockCycles = 16
 		c.rst(0x28)
 	}
 	c.opcodes[0xF0] = func() {
+		c.clockCycles = 12
 		c.A = c.Memory.Read(0xFF00 + uint16(c.NextByte()))
 	}
 	c.opcodes[0xF1] = func() {
+		c.clockCycles = 12
 		val := c.PopWord()
 		c.A = getUpper(val)
 		c.Flags.Z = val&(1<<7) != 0
@@ -786,21 +909,26 @@ func (c *CPU) setupOpcodes() {
 		c.Flags.C = val&(1<<4) != 0
 	}
 	c.opcodes[0xF2] = func() {
+		c.clockCycles = 8
 		c.A = c.Memory.Read(0xFF00 + (c.BC & 0x00FF))
 	}
 	c.opcodes[0xF3] = func() {
-		c.InterruptsEnabled = false
+		c.IME = false
 	}
 	c.opcodes[0xF5] = func() {
+		c.clockCycles = 16
 		c.PushWord(c.GetAF())
 	}
 	c.opcodes[0xF6] = func() {
+		c.clockCycles = 8
 		c.or(c.NextByte())
 	}
 	c.opcodes[0xF7] = func() {
+		c.clockCycles = 16
 		c.rst(0x30)
 	}
 	c.opcodes[0xF8] = func() {
+		c.clockCycles = 12
 		val := c.NextByte()
 		c.Flags.H = ((c.PC & 0x0FFF) + uint16(val)) > 0x0FFF
 		c.Flags.C = (uint32(val) + uint32(c.PC)) > 0xFFFF
@@ -809,18 +937,22 @@ func (c *CPU) setupOpcodes() {
 		c.HL = signedAdd(c.SP, val)
 	}
 	c.opcodes[0xF9] = func() {
+		c.clockCycles = 8
 		c.SP = c.HL
 	}
 	c.opcodes[0xFA] = func() {
+		c.clockCycles = 16
 		c.A = c.Memory.Read(c.NextWord())
 	}
 	c.opcodes[0xFB] = func() {
-		c.InterruptsEnabled = true
+		c.IME = true
 	}
 	c.opcodes[0xFE] = func() {
+		c.clockCycles = 8
 		c.cp(c.NextByte())
 	}
 	c.opcodes[0xFF] = func() {
+		c.clockCycles = 16
 		c.rst(0x38)
 	}
 
