@@ -38,7 +38,7 @@ func (m *Mbc5) Write(addr uint16, value uint8) {
 		// ROM bank select
 		m.SelectedRomBank = uint16(value)
 	} else if addr >= 0x3000 && addr <= 0x3FFF {
-		m.SelectedRomBank = (((value & 0x1) << 8) | (m.SelectedRomBank & 0xFF))
+		m.SelectedRomBank = ((uint16(value&0x1) << 8) | (m.SelectedRomBank & 0xFF))
 	} else if addr >= 0x4000 && addr <= 0x5FFF {
 		// RAM bank select
 		m.SelectedRamBank = uint16(value & 0xF)
