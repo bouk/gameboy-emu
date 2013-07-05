@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"log"
 	"math"
-	"os"
 	"strings"
 )
 
@@ -243,12 +242,8 @@ func main() {
 	m := memory.NewMMC(mbc)
 	cpu := lr35902.NewCPU(m)
 
-	if biosFile, err := os.Open("DMG_ROM.bin"); err == nil {
-		defer biosFile.Close()
-
+	if m.Bios, err = ioutil.ReadFile("DMG_ROM.bin"); err == nil {
 		log.Println("BIOS file found, loading...")
-
-		biosFile.Read(m.Bios)
 		m.BiosEnabled = true
 	} else {
 		log.Println("BIOS file not found, emulating state after BIOS")
