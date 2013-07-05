@@ -2,22 +2,8 @@ package lr35902
 
 import (
 	"fmt"
+	"github.com/boukevanderbijl/gameboy-emu/memory"
 )
-
-type Memory interface {
-	Read(address uint16) uint8
-	Write(address uint16, value uint8)
-}
-
-type RAM []uint8
-
-func (r *RAM) Read(addr uint16) uint8 {
-	return (*r)[addr]
-}
-
-func (r *RAM) Write(addr uint16, value uint8) {
-	(*r)[addr] = value
-}
 
 type CPU struct {
 	PC uint16
@@ -34,7 +20,7 @@ type CPU struct {
 		Z, N, H, C bool
 	}
 
-	Memory
+	Memory memory.Memory
 
 	// in HZ
 	ClockSpeed uint
@@ -48,7 +34,7 @@ type CPU struct {
 	cbOpcodes [256]func()
 }
 
-func NewCPU(m Memory) *CPU {
+func NewCPU(m memory.Memory) *CPU {
 	c := new(CPU)
 	c.Memory = m
 	c.ClockSpeed = 4194304
