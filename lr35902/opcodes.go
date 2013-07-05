@@ -1750,7 +1750,7 @@ func (c *CPU) rst(addr uint8) {
 func (c *CPU) add(b uint8) {
 	n := uint16(c.A) + uint16(b)
 	c.Flags.Z = (n & 0xFF) == 0
-	c.Flags.H = ((c.A & 0x0F) + (b & 0x0F)) > 0x0F
+	c.Flags.H = ((c.A&0x0F)+(b&0x0F))&0x10 == 0x10
 	c.Flags.C = n > 0xFF
 	c.Flags.N = false
 	c.A = uint8(n & 0xFF)
@@ -1762,7 +1762,7 @@ func (c *CPU) adc(b uint8) {
 		n++
 	}
 	c.Flags.Z = (n & 0xFF) == 0
-	c.Flags.H = ((c.A & 0x0F) + (b & 0x0F)) > 0x0F
+	c.Flags.H = ((c.A&0x0F)+(b&0x0F))&0x10 == 0x10
 	c.Flags.C = n > 0xFF
 	c.Flags.N = false
 	c.A = uint8(n & 0xFF)
