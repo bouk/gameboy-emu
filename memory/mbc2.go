@@ -1,14 +1,18 @@
 package memory
 
+import "log"
+
 type Mbc2 struct {
 	ROM             []uint8
-	RAM             [512]uint8
+	RAM             []uint8
 	SelectedRomBank uint16
 }
 
-func NewMbc2(ROM []uint8) *Mbc2 {
+func NewMBC2(ROM, RAM []uint8) *Mbc2 {
 	m := new(Mbc2)
 	m.ROM = ROM
+	m.RAM = RAM
+
 	m.SelectedRomBank = 1
 	return m
 }
@@ -18,15 +22,11 @@ func (m *Mbc2) Read(addr uint16) uint8 {
 		return m.ROM[addr]
 	} else if addr >= 0xA000 && addr <= 0xA1FF {
 		return m.RAM[addr-0xA000]
+	} else if addr < 0x8000 {
+		return m.ROM[(m.SelectedRomBank*0x4000)+(addr-0x4000)]
 	} else {
-		if addr > 0x7FFF {
-			panic("INVALID ROM ADDRESS")
-		}
-		if m.SelectedRomBank == 0 {
-			return m.ROM[addr]
-		} else {
-			return m.ROM[(m.SelectedRomBank*0x4000)+(addr-0x4000)]
-		}
+		log.Printf("Invalid read for Mbc2 0x%04X", addr)
+		return 0
 	}
 }
 
@@ -45,5 +45,7 @@ func (m *Mbc2) Write(addr uint16, value uint8) {
 		}
 	} else if addr >= 0xA000 && addr <= 0xA1FF {
 		m.RAM[addr-0xA000] = (value & 0xF)
+	} else {
+		log.Println("Invalid write for Mbc2 0x%04X 0x%02X", addr, value)
 	}
 }
