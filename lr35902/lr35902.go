@@ -3,6 +3,7 @@ package lr35902
 import (
 	"fmt"
 	"github.com/boukevanderbijl/gameboy-emu/memory"
+	"time"
 )
 
 type CPU struct {
@@ -43,9 +44,14 @@ func NewCPU(m memory.Memory) *CPU {
 }
 
 func (c *CPU) Step() {
+	start := time.Now()
 	c.clockCycles = 4
 	opcode := c.NextByte()
 	c.opcodes[opcode]()
+
+	if timediff := float64(c.clockCycles)/float64(c.ClockSpeed) - start.Sub(time.Now()).Seconds(); timediff > 0 {
+		time.Sleep(time.Duration(timediff*1e9) * time.Nanosecond)
+	}
 }
 
 func (c *CPU) NextByte() uint8 {
