@@ -18,12 +18,14 @@ var (
 	debugEnabled bool
 	filename     string
 	showHelp     bool
+	cpuDump      bool
 )
 
 func init() {
 	flag.BoolVar(&debugEnabled, "debug", false, "enable debug logging to stderr")
 	flag.BoolVar(&showHelp, "help", false, "show help")
 	flag.BoolVar(&showHelp, "h", false, "show help")
+	flag.BoolVar(&cpuDump, "cpudump", false, "dump the state of the CPU at every step")
 }
 
 func main() {
@@ -277,8 +279,11 @@ func main() {
 		}
 	}()
 
-	for !cpu.Stopped && cpu.PC <= 0xFF {
+	for !cpu.Stopped {
 		cpu.Step()
+		if cpuDump {
+			cpu.DumpState()
+		}
 	}
 
 loop:
