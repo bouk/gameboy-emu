@@ -24,7 +24,7 @@ type CPU struct {
 	Memory memory.Memory
 
 	// in HZ
-	ClockSpeed uint
+	ClockSpeed uint64
 
 	// Variable that's filled in by the opcode functions to make sure the processor runs on the correct speed.
 	// 1 machine cycle = 4 clock cycles

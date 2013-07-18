@@ -19,6 +19,7 @@ var (
 	filename     string
 	showHelp     bool
 	cpuDump      bool
+	turbo        bool
 )
 
 func init() {
@@ -26,6 +27,7 @@ func init() {
 	flag.BoolVar(&showHelp, "help", false, "show help")
 	flag.BoolVar(&showHelp, "h", false, "show help")
 	flag.BoolVar(&cpuDump, "cpudump", false, "dump the state of the CPU at every step")
+	flag.BoolVar(&turbo, "turbo", false, "enables 4x TURBO MODE")
 }
 
 func main() {
@@ -249,6 +251,10 @@ func main() {
 	m := memory.NewMMC(mbc)
 	cpu := lr35902.NewCPU(m)
 
+	if turbo {
+		cpu.ClockSpeed *= 4
+	}
+
 	if m.Bios, err = ioutil.ReadFile("DMG_ROM.bin"); err == nil {
 		log.Println("BIOS file found, loading...")
 		m.BiosEnabled = true
@@ -267,13 +273,19 @@ func main() {
 
 	sdl.Init(sdl.INIT_VIDEO)
 	defer sdl.Quit()
-	screen := sdl.SetVideoMode(160, 144, 32, 0)
+	screen := sdl.SetVideoMode(160, 144, 32, sdl.HWSURFACE)
 	go func() {
 		for _ = range time.Tick(time.Second / 60) {
 			lcdc := m.Read(memory.LCDC)
 			screen.FillRect(&sdl.Rect{0, 0, 160, 144}, sdl.MapRGBA(screen.Format, 0xFF, 0xFF, 0xFF, 0xFF))
 			if lcdc&(1<<7) > 0 {
-				screen.Blit(&sdl.Rect{int16(m.Read(memory.SCX)), int16(m.Read(memory.SCY)), 256, 256}, m.Video.Background, &sdl.Rect{0, 0, 256, 256})
+				backgroundDst := sdl.Rect{int16(m.Read(memory.SCX)), int16(m.Read(memory.SCY)), 256, 256}
+				backgroundSrc := sdl.Rect{0, 0, 256, 256}
+				if lcdc&(1<<4) > 0 {
+					screen.Blit(&backgroundDst, m.Video.Background1, &backgroundSrc)
+				} else {
+					screen.Blit(&backgroundDst, m.Video.Background2, &backgroundSrc)
+				}
 			}
 			screen.Flip()
 		}

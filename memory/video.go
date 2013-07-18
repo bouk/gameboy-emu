@@ -8,21 +8,24 @@ import (
 
 type Video struct {
 	sync.Mutex
-	RAM, OAM   []uint8
-	Tiles      [256]*sdl.Surface
-	Background *sdl.Surface
+	RAM, OAM    []uint8
+	Tiles       [384]*sdl.Surface
+	Background1 *sdl.Surface
+	Background2 *sdl.Surface
 }
 
 func NewVideo() *Video {
 	v := new(Video)
 	v.RAM = make([]uint8, 8*1024)
 	v.OAM = make([]uint8, 4*40)
-	for i := 0; i < 256; i++ {
-		v.Tiles[i] = sdl.CreateRGBSurface(0, 8, 8, 32, 0, 0, 0, 0)
+	for i := 0; i < 384; i++ {
+		v.Tiles[i] = sdl.CreateRGBSurface(sdl.HWSURFACE, 8, 8, 32, 0, 0, 0, 0)
 		v.Tiles[i].FillRect(&sdl.Rect{0, 0, 8, 8}, sdl.MapRGBA(v.Tiles[i].Format, 0xFF, 0xFF, 0xFF, 0xFF))
 	}
-	v.Background = sdl.CreateRGBSurface(0, 256, 256, 32, 0, 0, 0, 0)
-	v.Background.FillRect(&sdl.Rect{0, 0, 256, 256}, sdl.MapRGBA(v.Background.Format, 0xFF, 0xFF, 0xFF, 0xFF))
+	v.Background1 = sdl.CreateRGBSurface(sdl.HWSURFACE, 256, 256, 32, 0, 0, 0, 0)
+	v.Background1.FillRect(&sdl.Rect{0, 0, 256, 256}, sdl.MapRGBA(v.Background1.Format, 0xFF, 0xFF, 0xFF, 0xFF))
+	v.Background2 = sdl.CreateRGBSurface(sdl.HWSURFACE, 256, 256, 32, 0, 0, 0, 0)
+	v.Background2.FillRect(&sdl.Rect{0, 0, 256, 256}, sdl.MapRGBA(v.Background2.Format, 0xFF, 0xFF, 0xFF, 0xFF))
 	return v
 }
 
@@ -35,7 +38,8 @@ func (v *Video) Write(addr uint16, value uint8) {
 	case addr < 0xA000:
 		v.RAM[addr-0x8000] = value
 		tilenumber := (addr - 0x8000) / 16
-		if tilenumber < 256 {
+		if tilenumber < 384 {
+			v.Tiles[tilenumber].FillRect(&sdl.Rect{0, 0, 8, 8}, sdl.MapRGBA(v.Tiles[tilenumber].Format, 0xFF, 0xFF, 0xFF, 0xFF))
 			for line := uint16(0); line < 8; line++ {
 				for pixel := uint16(0); pixel < 8; pixel++ {
 					b := tilenumber*16 + line*2
@@ -48,7 +52,8 @@ func (v *Video) Write(addr uint16, value uint8) {
 			for row := int16(0); row < 32; row++ {
 				for col := int16(0); col < 32; col++ {
 					dstRect := &sdl.Rect{(col * 8), (row * 8), 8, 8}
-					v.Background.Blit(dstRect, v.Tiles[v.RAM[0x1800+row*32+col]], &sdl.Rect{0, 0, 8, 8})
+					v.Background1.Blit(dstRect, v.Tiles[v.RAM[0x1800+row*32+col]], &sdl.Rect{0, 0, 8, 8})
+					v.Background2.Blit(dstRect, v.Tiles[128+uint16(uint8(v.RAM[0x1C00+row*32+col]+128))], &sdl.Rect{0, 0, 8, 8})
 				}
 			}
 		} else if addr >= 0x9800 && addr <= 0x9BFF {
@@ -56,7 +61,13 @@ func (v *Video) Write(addr uint16, value uint8) {
 			row := int16(addr-0x9800) / 32
 			dstRect := &sdl.Rect{(col * 8), (row * 8), 8, 8}
 			tile := v.RAM[0x1800+row*32+col]
-			v.Background.Blit(dstRect, v.Tiles[tile], &sdl.Rect{0, 0, 8, 8})
+			v.Background1.Blit(dstRect, v.Tiles[tile], &sdl.Rect{0, 0, 8, 8})
+		} else if addr >= 0x9C00 && addr <= 0x9FFF {
+			col := int16(addr-0x9C00) % 32
+			row := int16(addr-0x9C00) / 32
+			dstRect := &sdl.Rect{(col * 8), (row * 8), 8, 8}
+			tile := 128 + uint16(uint8(v.RAM[0x1C00+row*32+col]+128))
+			v.Background2.Blit(dstRect, v.Tiles[tile], &sdl.Rect{0, 0, 8, 8})
 		}
 	case addr < 0xFE00:
 		log.Println("Invalid write to Video 0x%04X 0x%02X", addr, value)

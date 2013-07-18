@@ -5,7 +5,7 @@ import "log"
 type Mbc2 struct {
 	ROM             []uint8
 	RAM             []uint8
-	SelectedRomBank uint16
+	SelectedRomBank uint32
 }
 
 func NewMBC2(ROM, RAM []uint8) *Mbc2 {
@@ -23,7 +23,7 @@ func (m *Mbc2) Read(addr uint16) uint8 {
 	} else if addr >= 0xA000 && addr <= 0xA1FF {
 		return m.RAM[addr-0xA000]
 	} else if addr < 0x8000 {
-		return m.ROM[(m.SelectedRomBank*0x4000)+(addr-0x4000)]
+		return m.ROM[(m.SelectedRomBank*0x4000)+uint32(addr-0x4000)]
 	} else {
 		log.Printf("Invalid read for Mbc2 0x%04X", addr)
 		return 0
@@ -38,7 +38,7 @@ func (m *Mbc2) Write(addr uint16, value uint8) {
 
 		// The least significant bit of the upper address byte must be one to select a ROM bank
 		if (addr>>8)&0x1 == 0x1 {
-			m.SelectedRomBank = uint16(value & 0xF)
+			m.SelectedRomBank = uint32(value & 0xF)
 			if m.SelectedRomBank == 0x00 || m.SelectedRomBank == 0x20 || m.SelectedRomBank == 0x40 || m.SelectedRomBank == 0x60 {
 				m.SelectedRomBank++
 			}
