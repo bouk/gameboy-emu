@@ -80,16 +80,19 @@ type Mmc struct {
 	MemoryBank       Memory
 	InternalRam      []uint8
 	UpperInternalRam []uint8
+
+	*Video
 }
 
 func NewMMC(memory Memory) *Mmc {
 	m := new(Mmc)
 	m.Bios = make([]uint8, 256)
 	m.BiosEnabled = false
-
 	m.MemoryBank = memory
 	m.InternalRam = make([]uint8, 8*1024)
 	m.UpperInternalRam = make([]uint8, 256)
+
+	m.Video = NewVideo()
 	return m
 }
 
@@ -100,8 +103,7 @@ func (m *Mmc) Read(addr uint16) uint8 {
 	case addr < 0x8000:
 		return m.MemoryBank.Read(addr)
 	case addr < 0xA000:
-		// read VRAM
-		return 0
+		return m.Video.Read(addr)
 	case addr < 0xC000:
 		return m.MemoryBank.Read(addr)
 	case addr < 0xE000:
@@ -112,8 +114,7 @@ func (m *Mmc) Read(addr uint16) uint8 {
 		log.Printf("Read from unused memory 0x%04X", addr)
 		return 0
 	case addr < 0xFF00:
-		// Sprite attribute memory (OAM)
-		return 0
+		return m.Video.Read(addr)
 	default:
 		return m.UpperInternalRam[addr-0xFF00]
 	}
@@ -124,7 +125,7 @@ func (m *Mmc) Write(addr uint16, value uint8) {
 	case addr < 0x8000:
 		m.MemoryBank.Write(addr, value)
 	case addr < 0xA000:
-		// write video RAM
+		m.Video.Write(addr, value)
 	case addr < 0xC000:
 		m.MemoryBank.Write(addr, value)
 	case addr < 0xE000:
@@ -134,7 +135,7 @@ func (m *Mmc) Write(addr uint16, value uint8) {
 	case addr < 0xFE00:
 		log.Printf("Write to unused memory 0x%04X 0x%02X", addr, value)
 	case addr < 0xFF00:
-		// Sprite attribute memory (OAM)
+		m.Video.Write(addr, value)
 	default:
 		m.UpperInternalRam[addr-0xFF00] = value
 		switch addr {
