@@ -3,12 +3,15 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/boukevanderbijl/Go-SDL/sdl"
 	"github.com/boukevanderbijl/gameboy-emu/lr35902"
 	"github.com/boukevanderbijl/gameboy-emu/memory"
 	"io/ioutil"
 	"log"
 	"math"
+	"runtime"
 	"strings"
+	"time"
 )
 
 var (
@@ -24,6 +27,8 @@ func init() {
 }
 
 func main() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
 	flag.Parse()
 
 	if showHelp {
@@ -258,8 +263,32 @@ func main() {
 		cpu.Flags.C = true
 	}
 
+	sdl.Init(sdl.INIT_VIDEO)
+	defer sdl.Quit()
+	screen := sdl.SetVideoMode(160, 144, 32, 0)
+	go func() {
+		for _ = range time.Tick(time.Second / 60) {
+			lcdc := m.Read(memory.LCDC)
+			screen.FillRect(&sdl.Rect{0, 0, 160, 144}, sdl.MapRGBA(screen.Format, 0xFF, 0xFF, 0xFF, 0xFF))
+			if lcdc&(1<<7) > 0 {
+				screen.Blit(&sdl.Rect{int16(m.Read(memory.SCX)), int16(m.Read(memory.SCY)), 256, 256}, m.Video.Background, &sdl.Rect{0, 0, 256, 256})
+			}
+			screen.Flip()
+		}
+	}()
+
 	for !cpu.Stopped && cpu.PC <= 0xFF {
 		cpu.Step()
 	}
-	cpu.DumpState()
+
+loop:
+	for {
+		select {
+		case event := <-sdl.Events:
+			switch event.(type) {
+			case sdl.QuitEvent:
+				break loop
+			}
+		}
+	}
 }
