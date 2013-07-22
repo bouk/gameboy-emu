@@ -1,9 +1,9 @@
 package main
 
 import (
+	sf "bitbucket.org/krepa098/gosfml2"
 	"flag"
 	"fmt"
-	"github.com/boukevanderbijl/Go-SDL/sdl"
 	"github.com/boukevanderbijl/gameboy-emu/lr35902"
 	"github.com/boukevanderbijl/gameboy-emu/memory"
 	"io/ioutil"
@@ -26,12 +26,13 @@ func init() {
 	flag.BoolVar(&debugEnabled, "debug", false, "enable debug logging to stderr")
 	flag.BoolVar(&showHelp, "help", false, "show help")
 	flag.BoolVar(&showHelp, "h", false, "show help")
-	flag.BoolVar(&cpuDump, "cpudump", false, "dump the state of the CPU at every step")
+	flag.BoolVar(&cpuDump, "dumpcpu", false, "dump the state of the CPU at every step")
 	flag.BoolVar(&turbo, "turbo", false, "enables 4x TURBO MODE")
 }
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
+	runtime.LockOSThread()
 
 	flag.Parse()
 
@@ -154,105 +155,19 @@ func main() {
 
 	log.Printf("Cartridge type: 0x%02X", rom[0x0147])
 
-	var mbc memory.Memory
-
-	switch rom[0x0147] {
-	case 0x0:
-		log.Println("ROM ONLY")
-		mbc = memory.NewSimple(rom, ram)
-	case 0x1:
-		log.Println("ROM+MBC1")
-		mbc = memory.NewMBC1(rom, ram)
-	case 0x2:
-		log.Println("ROM+MBC1+RAM")
-		mbc = memory.NewMBC1(rom, ram)
-	case 0x3:
-		log.Println("ROM+MBC1+RAM+BATTERY")
-		mbc = memory.NewMBC1(rom, ram)
-	case 0x5:
-		log.Println("ROM+MBC2")
-		mbc = memory.NewMBC2(rom, ram)
-	case 0x6:
-		log.Println("ROM+MBC2+BATTERY")
-		mbc = memory.NewMBC2(rom, ram)
-	case 0x8:
-		log.Println("ROM+RAM")
-		mbc = memory.NewSimple(rom, ram)
-	case 0x9:
-		log.Println("ROM+RAM+BATTERY")
-		mbc = memory.NewSimple(rom, ram)
-	case 0xB:
-		log.Println("ROM+MMM01")
-		fmt.Println("Unimplemented memory controller")
-		return
-	case 0xC:
-		log.Println("ROM+MMM01+SRAM")
-		fmt.Println("Unimplemented memory controller")
-		return
-	case 0xD:
-		log.Println("ROM+MMM01+SRAM+BATTERY")
-		fmt.Println("Unimplemented memory controller")
-		return
-	case 0xF:
-		log.Println("ROM+MBC3+TIMER+BATTERY")
-		mbc = memory.NewMBC3(rom, ram)
-	case 0x10:
-		log.Println("ROM+MBC3+TIMER+RAM+BATTERY")
-		mbc = memory.NewMBC3(rom, ram)
-	case 0x11:
-		log.Println("ROM+MBC3")
-		mbc = memory.NewMBC3(rom, ram)
-	case 0x12:
-		log.Println("ROM+MBC3+RAM")
-		mbc = memory.NewMBC3(rom, ram)
-	case 0x13:
-		log.Println("ROM+MBC3+RAM+BATTERY")
-		mbc = memory.NewMBC3(rom, ram)
-	case 0x19:
-		log.Println("ROM+MBC5")
-		mbc = memory.NewMBC5(rom, ram)
-	case 0x1A:
-		log.Println("ROM+MBC5+RAM")
-		mbc = memory.NewMBC5(rom, ram)
-	case 0x1B:
-		log.Println("ROM+MBC5+RAM+BATTERY")
-		mbc = memory.NewMBC5(rom, ram)
-	case 0x1C:
-		log.Println("ROM+MBC5+RUMBLE")
-		mbc = memory.NewMBC5(rom, ram)
-	case 0x1D:
-		log.Println("ROM+MBC5+RUMBLE+SRAM")
-		mbc = memory.NewMBC5(rom, ram)
-	case 0x1E:
-		log.Println("ROM+MBC5+RUMBLE+SRAM+BATTERY")
-		mbc = memory.NewMBC5(rom, ram)
-	case 0x1F:
-		log.Println("Pocket Camera")
-		fmt.Println("Unimplemented memory controller")
-		return
-	case 0xFD:
-		log.Println("Bandai TM5")
-		fmt.Println("Unimplemented memory controller")
-		return
-	case 0xFE:
-		log.Println("Hudson HuC-3")
-		fmt.Println("Unimplemented memory controller")
-		return
-	case 0xFF:
-		log.Println("Hudson HuC-1")
-		fmt.Println("Unimplemented memory controller")
-		return
-	default:
-		log.Println("Unknown memory controller")
-		fmt.Println("Unimplemented memory controller")
+	mbc, mbcName, err := memory.MbcType(rom[0x0147], rom, ram)
+	if err != nil {
+		fmt.Println(err)
 		return
 	}
+	log.Println(mbcName)
 
 	m := memory.NewMMC(mbc)
+	video := m.Video
 	cpu := lr35902.NewCPU(m)
 
 	if turbo {
-		cpu.ClockSpeed *= 4
+		cpu.RealisticSteps = false
 	}
 
 	if m.Bios, err = ioutil.ReadFile("DMG_ROM.bin"); err == nil {
@@ -271,41 +186,56 @@ func main() {
 		cpu.Flags.C = true
 	}
 
-	sdl.Init(sdl.INIT_VIDEO)
-	defer sdl.Quit()
-	screen := sdl.SetVideoMode(160, 144, 32, sdl.HWSURFACE)
+	window := sf.NewRenderWindow(sf.VideoMode{160, 144, 32}, "Goboy", sf.StyleDefault, nil)
+	texture, _ := sf.NewTexture(memory.WIDTH, memory.HEIGHT)
+	renderingSprite := sf.NewSprite(texture)
+	window.Clear(sf.ColorWhite())
+	window.Display()
+
+	screenUpdates := make(chan []uint8)
 	go func() {
-		for _ = range time.Tick(time.Second / 60) {
-			lcdc := m.Read(memory.LCDC)
-			screen.FillRect(&sdl.Rect{0, 0, 160, 144}, sdl.MapRGBA(screen.Format, 0xFF, 0xFF, 0xFF, 0xFF))
-			if lcdc&(1<<7) > 0 {
-				backgroundDst := sdl.Rect{int16(m.Read(memory.SCX)), int16(m.Read(memory.SCY)), 256, 256}
-				backgroundSrc := sdl.Rect{0, 0, 256, 256}
-				if lcdc&(1<<4) > 0 {
-					screen.Blit(&backgroundDst, m.Video.Background1, &backgroundSrc)
-				} else {
-					screen.Blit(&backgroundDst, m.Video.Background2, &backgroundSrc)
+
+		for !cpu.Stopped {
+			start := time.Now()
+			cycles := cpu.Step()
+			if cpuDump {
+				cpu.DumpState()
+			}
+			for i := uint(0); i < cycles; i++ {
+				video.Step()
+				if video.LY == 144 && video.CycleStep == 0 {
+					screenUpdates <- video.Pixels
 				}
 			}
-			screen.Flip()
+			timeItShouldHaveTaken := int64((float64(cycles) / float64(cpu.ClockSpeed)) * 1e9)
+			timeItTook := time.Now().Sub(start).Nanoseconds()
+			if cpu.RealisticSteps {
+				if timediff := timeItShouldHaveTaken - timeItTook; timediff > 0 {
+					log.Printf("Sleeping for %d", timediff)
+					time.Sleep(time.Duration(timediff) * time.Nanosecond)
+				}
+			}
 		}
 	}()
-
-	for !cpu.Stopped {
-		cpu.Step()
-		if cpuDump {
-			cpu.DumpState()
-		}
-	}
-
-loop:
+main:
 	for {
-		select {
-		case event := <-sdl.Events:
-			switch event.(type) {
-			case sdl.QuitEvent:
-				break loop
+		t := <-screenUpdates
+		texture.UpdateFromPixels(t, memory.WIDTH, memory.HEIGHT, 0, 0)
+		// VBLANK interrupt & render
+		window.Clear(sf.ColorWhite())
+		window.Draw(renderingSprite, nil)
+		window.Display()
+		for event := window.PollEvent(); event != nil; event = window.PollEvent() {
+			switch ev := event.(type) {
+			case sf.EventKeyPressed:
+				//exit on ESC
+				if ev.Code == sf.KeyEscape {
+					break main
+				}
+			case sf.EventClosed:
+				break main
 			}
 		}
 	}
+	cpu.DumpState()
 }

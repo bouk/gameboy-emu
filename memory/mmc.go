@@ -116,7 +116,30 @@ func (m *Mmc) Read(addr uint16) uint8 {
 	case addr < 0xFF00:
 		return m.Video.Read(addr)
 	default:
-		return m.UpperInternalRam[addr-0xFF00]
+		switch addr {
+		case LCDC:
+			return m.Video.LCDC
+		case SCX:
+			return m.Video.SCX
+		case SCY:
+			return m.Video.SCY
+		case LY:
+			return m.Video.LY
+		case LYC:
+			return m.Video.LYC
+		case BGP:
+			return m.Video.BGP
+		case OBP0:
+			return m.Video.OBP0
+		case OBP1:
+			return m.Video.OBP1
+		case WX:
+			return m.Video.WX
+		case WY:
+			return m.Video.WY
+		default:
+			return m.UpperInternalRam[addr-0xFF00]
+		}
 	}
 }
 
@@ -140,8 +163,28 @@ func (m *Mmc) Write(addr uint16, value uint8) {
 		m.UpperInternalRam[addr-0xFF00] = value
 		switch addr {
 		case DISABLE_BIOS:
-			m.BiosEnabled = false
 			// something with io ports and stuff
+			m.BiosEnabled = false
+		case LCDC:
+			m.Video.LCDC = value
+		case SCX:
+			m.Video.SCX = value
+		case SCY:
+			m.Video.SCY = value
+		case LY:
+			// Read only
+		case LYC:
+			m.Video.LYC = value
+		case BGP:
+			m.Video.BGP = value
+		case OBP0:
+			m.Video.OBP0 = value
+		case OBP1:
+			m.Video.OBP1 = value
+		case WX:
+			m.Video.WX = value
+		case WY:
+			m.Video.WY = value
 		}
 	}
 }

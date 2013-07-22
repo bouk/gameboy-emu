@@ -3,7 +3,6 @@ package lr35902
 import (
 	"fmt"
 	"github.com/boukevanderbijl/gameboy-emu/memory"
-	"time"
 )
 
 type CPU struct {
@@ -31,6 +30,9 @@ type CPU struct {
 	// is set to 4 and overwritten on a per-function basis
 	clockCycles uint
 
+	// Whether the CPU should sleep after every step to make it realistic
+	RealisticSteps bool
+
 	opcodes   [256]func()
 	cbOpcodes [256]func()
 }
@@ -40,18 +42,18 @@ func NewCPU(m memory.Memory) *CPU {
 	c.Memory = m
 	c.ClockSpeed = 4194304
 	c.setupOpcodes()
+	c.RealisticSteps = true
 	return c
 }
 
-func (c *CPU) Step() {
-	start := time.Now()
+// Fetches one opcode and executes it
+// returns the number of cycles that have occures
+func (c *CPU) Step() uint {
 	c.clockCycles = 4
 	opcode := c.NextByte()
 	c.opcodes[opcode]()
 
-	if timediff := float64(c.clockCycles)/float64(c.ClockSpeed) - start.Sub(time.Now()).Seconds(); timediff > 0 {
-		time.Sleep(time.Duration(timediff*1e9) * time.Nanosecond)
-	}
+	return c.clockCycles
 }
 
 func (c *CPU) NextByte() uint8 {
